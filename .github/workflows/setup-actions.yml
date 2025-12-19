@@ -1,0 +1,31 @@
+name: Setup Action Dependencies
+
+on:
+  push:
+    paths:
+      - '.github/actions/**/package.json'
+  workflow_dispatch:
+
+jobs:
+  install-dependencies:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install risk-calculator dependencies
+        working-directory: .github/actions/risk-calculator
+        run: npm install
+      
+      - name: Commit node_modules
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/actions/risk-calculator/node_modules
+          git diff --staged --quiet || git commit -m "Install risk-calculator dependencies"
+          git push
