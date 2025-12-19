@@ -1,0 +1,35 @@
+name: Test Risk Calculator
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  assess-risk:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Calculate deployment risk
+        id: risk
+        uses: ./.github/actions/risk-calculator
+        with:
+          files-changed-threshold: '20'
+          lines-changed-threshold: '500'
+          critical-paths: 'src/payment,src/auth,src/database'
+      
+      - name: Display risk assessment
+        run: |
+          echo "Risk Score: ${{ steps.risk.outputs.risk-score }}"
+          echo "Risk Level: ${{ steps.risk.outputs.risk-level }}"
+          echo "Recommendation: ${{ steps.risk.outputs.recommendation }}"
+          echo ""
+          echo "Full Analysis:"
+          echo '${{ steps.risk.outputs.analysis }}' | jq .
+      
+      - name: Block high-risk deployments
+        if: steps.risk.outputs.risk-level == 'critical'
+        run: |
+          echo "::error::Critical risk deployment requires VP approval before proceeding"
+          exit 1
